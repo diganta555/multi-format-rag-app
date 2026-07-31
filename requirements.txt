@@ -30,3 +30,4 @@ rank-bm25==0.2.2
 # --- Streamlit deployment option ---
 streamlit==1.40.2
 pandas==2.2.3
+rank-bm25==0.2.2
