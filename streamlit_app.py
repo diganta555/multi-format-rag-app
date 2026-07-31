@@ -191,6 +191,26 @@ h3 {
     padding-bottom: 0.3rem;
     margin-bottom: 0.3rem;
 }
+/* Widget labels, captions, and uploader text — force dark, readable color */
+[data-testid="stWidgetLabel"] p,
+[data-testid="stWidgetLabel"] label,
+.stCaption, [data-testid="stCaptionContainer"],
+[data-testid="stFileUploaderDropzone"] span,
+[data-testid="stFileUploaderDropzone"] small,
+[data-testid="stFileUploaderDropzone"] div,
+[data-testid="stFileUploaderFile"] span,
+[data-testid="stFileUploaderFile"] small,
+.stMarkdown p {
+    color: var(--ink) !important;
+    opacity: 1 !important;
+}
+
+/* Streamlit dims the whole app to ~70% opacity while a script run is in
+   progress; that's what made everything look washed out mid-action.
+   Force full opacity on the main view wrapper so text stays readable. */
+[data-testid="stAppViewContainer"], [data-testid="stMain"] {
+    opacity: 1 !important;
+}
 </style>
 
 <div class="stacks-hero">
@@ -282,7 +302,7 @@ with col_upload:
                 c1, c2 = st.columns([3.2, 1.3])
                 c1.write(f"`{i:02d}` {name}")
                 if name != "unknown" and c2.button("remove", key=f"del-{i}-{name}", type="secondary"):
-                    for p in Path("data").rglob(name):
+                    for p in UPLOAD_DIR.glob(name):
                         if p.is_file():
                             p.unlink()
                     rebuild_from_disk(rag)
