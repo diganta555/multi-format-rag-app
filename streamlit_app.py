@@ -138,9 +138,14 @@ h3 {
 /* Inputs */
 .stTextInput input, .stNumberInput input {
     background-color: var(--paper) !important;
+    color: var(--ink) !important;
     border: 1px solid var(--line-strong) !important;
     border-radius: 2px !important;
     font-family: 'Inter', sans-serif !important;
+}
+.stTextInput input::placeholder, .stNumberInput input::placeholder {
+    color: #8a8270 !important;
+    opacity: 1 !important;
 }
 
 /* Alerts (success/info) recolored to fit the palette */
