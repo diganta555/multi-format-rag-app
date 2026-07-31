@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stacks — Document Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0f1a2b;
+    --paper:#eee7d8;
+    --paper-dim:#e2d9c4;
+    --navy:#152238;
+    --navy-2:#1d3050;
+    --amber:#c7862b;
+    --amber-bright:#e0a53f;
+    --line:rgba(15,26,43,0.14);
+    --line-strong:rgba(15,26,43,0.28);
+    --ok:#3f7d5c;
+    --err:#a4432c;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  header{
+    background:var(--navy);
+    color:var(--paper);
+    padding:2.2rem 2rem 1.6rem;
+    border-bottom:4px solid var(--amber);
+  }
+  header h1{
+    font-family:'Source Serif 4',serif;
+    font-weight:700;
+    font-size:2.1rem;
+    margin:0 0 0.2rem;
+    letter-spacing:0.01em;
+  }
+  header p{
+    margin:0;
+    color:var(--paper-dim);
+    font-size:0.95rem;
+    max-width:46ch;
+  }
+  .drawer-index{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.72rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--amber-bright);
+    margin-bottom:0.6rem;
+  }
+  main{
+    max-width:1080px;
+    margin:0 auto;
+    padding:2.4rem 2rem 4rem;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:2.2rem;
+  }
+  @media(min-width:920px){
+    main{grid-template-columns: 340px 1fr;}
+  }
+  section{
+    background:#f6f1e4;
+    border:1px solid var(--line-strong);
+    border-radius:2px;
+    position:relative;
+  }
+  section::before{
+    content:attr(data-label);
+    position:absolute;
+    top:-11px; left:16px;
+    background:var(--paper);
+    padding:0 8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.68rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--navy-2);
+  }
+  .panel-body{padding:1.6rem 1.4rem 1.4rem;}
+
+  /* Upload drop zone */
+  #dropzone{
+    border:2px dashed var(--line-strong);
+    border-radius:2px;
+    padding:1.8rem 1rem;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  #dropzone:hover, #dropzone.drag{
+    border-color:var(--amber);
+    background:rgba(199,134,43,0.08);
+  }
+  #dropzone .glyph{font-size:1.6rem;display:block;margin-bottom:0.4rem;}
+  #dropzone .hint{font-size:0.78rem;color:#5b5342;margin-top:0.3rem;}
+  #fileInput{display:none;}
+
+  .file-types{
+    display:flex;flex-wrap:wrap;gap:0.35rem;
+    margin-top:1rem;
+  }
+  .chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.66rem;
+    padding:0.2rem 0.5rem;
+    border:1px solid var(--line-strong);
+    border-radius:2px;
+    color:var(--navy-2);
+  }
+
+  #uploadStatus{margin-top:1rem;font-size:0.82rem;}
+  .status-row{
+    display:flex;justify-content:space-between;gap:0.6rem;
+    padding:0.3rem 0;border-bottom:1px solid var(--line);
+  }
+  .status-row:last-child{border-bottom:none;}
+  .status-ok{color:var(--ok);}
+  .status-err{color:var(--err);}
+
+  .catalog-title{
+    font-family:'Source Serif 4',serif;font-weight:600;font-size:1.05rem;margin:1.6rem 0 0.6rem;
+  }
+  #fileList{list-style:none;margin:0;padding:0;}
+  #fileList li{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:0.5rem 0;border-bottom:1px solid var(--line);
+    font-size:0.86rem;
+  }
+  #fileList li .idx{font-family:'JetBrains Mono',monospace;color:var(--amber);margin-right:0.5rem;}
+  #fileList .empty{color:#8a8270;font-style:italic;font-size:0.85rem;}
+  #fileList li{gap:0.6rem;}
+  #fileList li .name{flex:1;overflow-wrap:anywhere;}
+  .del-btn{
+    background:none;border:1px solid var(--line-strong);color:var(--err);
+    font-family:'JetBrains Mono',monospace;font-size:0.7rem;line-height:1;
+    padding:0.2rem 0.45rem;border-radius:2px;cursor:pointer;flex-shrink:0;
+  }
+  .del-btn:hover{background:var(--err);color:var(--paper);border-color:var(--err);}
+  .catalog-header{display:flex;justify-content:space-between;align-items:baseline;}
+  .reset-btn{
+    background:none;border:none;color:var(--navy-2);
+    font-family:'JetBrains Mono',monospace;font-size:0.68rem;
+    text-decoration:underline;cursor:pointer;padding:0;
+  }
+  .reset-btn:hover{color:var(--err);}
+
+  .ready-status{
+    margin-top:0.5rem;font-size:0.8rem;font-family:'JetBrains Mono',monospace;
+    display:flex;align-items:center;gap:0.4rem;
+  }
+  .ready-status.ready-empty{color:#8a8270;}
+  .ready-status.ready-ok{color:var(--ok);}
+  .ready-status .dot{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;}
+  #queryInput:disabled{opacity:0.6;cursor:not-allowed;}
+
+  /* Search side */
+  #searchForm{display:flex;gap:0.6rem;}
+  #queryInput{
+    flex:1;
+    padding:0.75rem 0.9rem;
+    border:1px solid var(--line-strong);
+    border-radius:2px;
+    background:var(--paper);
+    font-family:'Inter',sans-serif;
+    font-size:0.95rem;
+  }
+  #queryInput:focus{outline:2px solid var(--amber); outline-offset:1px;}
+  button{
+    font-family:'Inter',sans-serif;font-weight:600;font-size:0.88rem;
+    background:var(--navy);color:var(--paper);
+    border:none;border-radius:2px;padding:0.75rem 1.2rem;
+    cursor:pointer;
+  }
+  button:hover{background:var(--navy-2);}
+  button:disabled{opacity:0.5;cursor:default;}
+
+  .topk{display:flex;align-items:center;gap:0.5rem;margin-top:0.7rem;font-size:0.8rem;color:#5b5342;}
+  .topk input{width:3.2rem;padding:0.25rem 0.4rem;border:1px solid var(--line-strong);border-radius:2px;}
+
+  #answerBox{margin-top:1.6rem;}
+  #answerBox .label{
+    font-family:'JetBrains Mono',monospace;font-size:0.68rem;letter-spacing:0.14em;
+    text-transform:uppercase;color:var(--amber);margin-bottom:0.5rem;
+  }
+  #answerText{
+    font-family:'Source Serif 4',serif;font-size:1.08rem;line-height:1.65;
+    white-space:pre-wrap;
+  }
+  #sourceChips{display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:1rem;}
+  .source-chip{
+    font-family:'JetBrains Mono',monospace;font-size:0.7rem;
+    padding:0.25rem 0.55rem;border:1px solid var(--amber);color:var(--navy-2);
+    border-radius:2px;background:rgba(199,134,43,0.1);
+  }
+  .placeholder{color:#8a8270;font-style:italic;}
+  .spinner{
+    display:inline-block;width:14px;height:14px;border:2px solid var(--line-strong);
+    border-top-color:var(--amber);border-radius:50%;animation:spin 0.7s linear infinite;
+    vertical-align:middle;margin-right:0.4rem;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="drawer-index">Drawer 01 — Reference &amp; Retrieval</div>
+  <h1>Stacks</h1>
+  <p>Upload documents into the stacks, then ask the reading room a question. Answers are drawn only from what you've filed.</p>
+</header>
+
+<main>
+  <section data-label="Accessions">
+    <div class="panel-body">
+      <div id="dropzone">
+        <span class="glyph">&#128194;</span>
+        <strong>Drop files here or click to browse</strong>
+        <div class="hint">Multiple files at once, mixed types welcome</div>
+        <input id="fileInput" type="file" multiple>
+      </div>
+      <div class="file-types" id="fileTypes"></div>
+      <div id="uploadStatus"></div>
+
+      <div class="catalog-header">
+        <div class="catalog-title">Indexed sources</div>
+        <button class="reset-btn" id="resetBtn" type="button">clear library</button>
+      </div>
+      <ul id="fileList"><li class="empty">Nothing filed yet</li></ul>
+    </div>
+  </section>
+
+  <section data-label="Reading Room">
+    <div class="panel-body">
+      <form id="searchForm">
+        <input id="queryInput" type="text" placeholder="Ask something about your documents…" autocomplete="off" disabled>
+        <button type="submit" id="searchBtn" disabled>Search</button>
+      </form>
+      <div id="readyStatus" class="ready-status ready-empty">Upload a document to get started</div>
+      <div class="topk">
+        Passages to consider:
+        <input type="number" id="topK" value="5" min="1" max="20">
+      </div>
+
+      <div id="answerBox">
+        <div class="label">Answer</div>
+        <div id="answerText" class="placeholder">Your answer will appear here once you've filed at least one document and asked a question.</div>
+        <div id="sourceChips"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const API_BASE = ""; // same origin — change if backend is hosted elsewhere
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const uploadStatus = document.getElementById('uploadStatus');
+const fileList = document.getElementById('fileList');
+const fileTypes = document.getElementById('fileTypes');
+
+async function loadHealth(){
+  try{
+    const res = await fetch(`${API_BASE}/api/health`);
+    const data = await res.json();
+    fileTypes.innerHTML = data.supported_extensions.map(ext => `<span class="chip">${ext}</span>`).join('');
+  }catch(e){ /* backend not up yet — fine, ignore */ }
+}
+
+const readyStatus = document.getElementById('readyStatus');
+const queryInput = document.getElementById('queryInput');
+
+async function refreshFileList(){
+  try{
+    const res = await fetch(`${API_BASE}/api/files`);
+    const data = await res.json();
+
+    const hasDocs = data.total_chunks > 0;
+    searchBtn.disabled = !hasDocs;
+    queryInput.disabled = !hasDocs;
+    if(hasDocs){
+      readyStatus.className = 'ready-status ready-ok';
+      const n = data.indexed_sources.length;
+      readyStatus.innerHTML = `<span class="dot"></span>${n} source${n===1?'':'s'} filed — ready to ask`;
+    }else{
+      readyStatus.className = 'ready-status ready-empty';
+      readyStatus.innerHTML = 'Upload a document to get started';
+    }
+
+    if(!data.indexed_sources || data.indexed_sources.length === 0){
+      fileList.innerHTML = '<li class="empty">Nothing filed yet</li>';
+      return;
+    }
+    fileList.innerHTML = data.indexed_sources.map((name, i) => `
+      <li>
+        <span class="name"><span class="idx">${String(i+1).padStart(2,'0')}</span>${name}</span>
+        ${name !== 'unknown' ? `<button class="del-btn" data-name="${name}" title="Remove ${name}">remove</button>` : ''}
+      </li>`
+    ).join('');
+    document.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', () => deleteFile(btn.dataset.name));
+    });
+  }catch(e){ /* ignore */ }
+}
+
+async function deleteFile(name){
+  if(!confirm(`Remove "${name}" from the library? This re-indexes the remaining files.`)) return;
+  try{
+    const res = await fetch(`${API_BASE}/api/files/${encodeURIComponent(name)}`, { method:'DELETE' });
+    if(!res.ok){
+      const err = await res.json();
+      alert(err.detail || 'Could not remove file.');
+      return;
+    }
+    refreshFileList();
+  }catch(e){
+    alert('Remove failed — is the backend running?');
+  }
+}
+
+document.getElementById('resetBtn').addEventListener('click', async () => {
+  if(!confirm('Clear the entire library? This deletes all uploaded files and the index.')) return;
+  try{
+    await fetch(`${API_BASE}/api/reset`, { method:'POST' });
+    refreshFileList();
+    answerText.textContent = 'Library cleared.';
+    answerText.classList.add('placeholder');
+    sourceChips.innerHTML = '';
+  }catch(e){
+    alert('Reset failed — is the backend running?');
+  }
+});
+
+dropzone.addEventListener('click', () => fileInput.click());
+['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, e => {
+  e.preventDefault(); dropzone.classList.add('drag');
+}));
+['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, e => {
+  e.preventDefault(); dropzone.classList.remove('drag');
+}));
+dropzone.addEventListener('drop', e => {
+  if(e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => {
+  if(fileInput.files.length) uploadFiles(fileInput.files);
+});
+
+async function uploadFiles(files){
+  const formData = new FormData();
+  for(const f of files) formData.append('files', f);
+
+  uploadStatus.innerHTML = `<div class="status-row"><span><span class="spinner"></span>Filing ${files.length} file(s)…</span></div>`;
+
+  try{
+    const res = await fetch(`${API_BASE}/api/upload`, { method:'POST', body: formData });
+    const data = await res.json();
+    uploadStatus.innerHTML = data.results.map(r => {
+      const cls = r.status === 'loaded' ? 'status-ok' : 'status-err';
+      const note = r.status === 'loaded' ? 'filed' : (r.reason || r.status);
+      return `<div class="status-row"><span>${r.filename}</span><span class="${cls}">${note}</span></div>`;
+    }).join('');
+    refreshFileList();
+    queryInput.focus();
+  }catch(e){
+    uploadStatus.innerHTML = `<div class="status-row"><span class="status-err">Upload failed — is the backend running?</span></div>`;
+  }
+  fileInput.value = '';
+}
+
+const searchForm = document.getElementById('searchForm');
+const answerText = document.getElementById('answerText');
+const sourceChips = document.getElementById('sourceChips');
+const searchBtn = document.getElementById('searchBtn');
+
+searchForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const query = document.getElementById('queryInput').value.trim();
+  if(!query) return;
+  const topK = parseInt(document.getElementById('topK').value, 10) || 5;
+
+  searchBtn.disabled = true;
+  answerText.classList.remove('placeholder');
+  answerText.textContent = '';
+  sourceChips.innerHTML = '';
+
+  try{
+    const res = await fetch(`${API_BASE}/api/query/stream`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({query, top_k: topK})
+    });
+    if(!res.ok){
+      const err = await res.json();
+      answerText.textContent = err.detail || 'No documents indexed yet — file something first.';
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while(true){
+      const { value, done } = await reader.read();
+      if(done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop(); // keep the last (possibly incomplete) event
+
+      for(const line of lines){
+        if(!line.startsWith('data: ')) continue;
+        const payload = line.slice(6);
+        if(payload === '[DONE]') continue;
+        const event = JSON.parse(payload);
+        if(event.type === 'answer_chunk'){
+          answerText.textContent += event.text;
+        }else if(event.type === 'sources'){
+          sourceChips.innerHTML = event.sources.map(s => `<span class="source-chip">${s}</span>`).join('');
+        }
+      }
+    }
+  }catch(e){
+    answerText.textContent = 'Search failed — is the backend running?';
+  }finally{
+    searchBtn.disabled = false;
+  }
+});
+
+loadHealth();
+refreshFileList();
+</script>
+</body>
+</html>

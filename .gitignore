@@ -1,0 +1,34 @@
+# --- Secrets ---
+.env
+*.env
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# --- Project data & generated index ---
+# These are either large, user-specific, or regenerated at runtime —
+# don't want them bloating the repo or overwriting a deployed server's data.
+data/uploads/
+faiss_store/*.index
+faiss_store/*.pkl
+
+# --- Editor / OS junk ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- uv / lockfile artifacts you don't want tracked (optional) ---
+# Keep uv.lock tracked normally — remove the next line if you want it in git.
+# uv.lock
+
+# --- Logs ---
+*.log

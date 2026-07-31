@@ -1,0 +1,4 @@
+Machine Learning Basics
+
+Machine Learning is a branch of Artificial Intelligence (AI) that enables computers to learn
+from data without being explicitly programmed.
