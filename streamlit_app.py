@@ -205,10 +205,24 @@ h3 {
 [data-testid="stFileUploaderDropzone"] div,
 [data-testid="stFileUploaderFile"] span,
 [data-testid="stFileUploaderFile"] small,
-.stMarkdown p {
+.stMarkdown p,
+.stMarkdown li,
+.stMarkdown ol,
+.stMarkdown ul {
     color: var(--ink) !important;
     opacity: 1 !important;
 }
+.stMarkdown li::marker {
+    color: var(--ink) !important;
+}
+
+/* Hero text must stay light against the dark navy background — higher
+   specificity so it wins over the broader .stMarkdown rule above. */
+.stacks-hero p, .stacks-hero .eyebrow, .stacks-hero h1 {
+    color: #d8cfba !important;
+}
+.stacks-hero h1 { color: var(--paper) !important; }
+.stacks-hero .eyebrow { color: #e0a53f !important; }
 
 /* Streamlit dims the whole app to ~70% opacity while a script run is in
    progress; that's what made everything look washed out mid-action.
