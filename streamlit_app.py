@@ -17,8 +17,14 @@ import streamlit as st
 # Streamlit Cloud injects secrets via st.secrets, not a .env file.
 # Bridge it into os.environ so the existing src/ modules (which read
 # os.getenv) work unmodified both locally and when deployed.
-if "GROQ_API_KEY" in st.secrets:
-    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+# Locally, st.secrets raises FileNotFoundError if no secrets.toml exists
+# at all (rather than just being empty) — that's expected when relying on
+# .env for local dev, so we catch it and fall through to .env.
+try:
+    if "GROQ_API_KEY" in st.secrets:
+        os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+except FileNotFoundError:
+    pass  # no secrets.toml locally — fine, src/search.py falls back to .env
 
 from src.data_loader import LOADER_REGISTRY, load_all_documents  # noqa: E402
 from src.search import RAGSearch  # noqa: E402
