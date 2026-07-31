@@ -222,7 +222,7 @@ h3 {
 """, unsafe_allow_html=True)
 
 
-@st.cache_resource(show_spinner="Loading models and index…")
+@st.cache_resource(show_spinner="Loading models and index...")
 def get_rag() -> RAGSearch:
     return RAGSearch()
 
