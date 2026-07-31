@@ -1,20 +1,32 @@
-langchain
-langchain-core
-langchain-community
-langchain-text-splitters
-langchain-openai
-openai
-pypdf
-pymupdf
-sentence-transformers
-transformers
-torch
-faiss-cpu
-chromadb
-python-dotenv
-ipykernel
-langchain-groq
+# --- Backend / API ---
 fastapi==0.115.6
 uvicorn[standard]==0.32.1
 python-multipart==0.0.19
 pydantic==2.10.3
+
+# --- RAG pipeline ---
+langchain==0.3.13
+langchain-community==0.3.13
+langchain-text-splitters==0.3.4
+langchain-groq==0.2.1
+langchain-core==0.3.28
+
+# --- Embeddings / vector store ---
+sentence-transformers==3.3.1
+faiss-cpu==1.9.0
+numpy==1.26.4
+
+# --- Document loaders ---
+pypdf==5.1.0
+docx2txt==0.8
+unstructured[xlsx]==0.16.11
+openpyxl==3.1.5
+
+# --- Config / env ---
+python-dotenv==1.0.1
+
+# --- Tier 1 retrieval upgrades ---
+rank-bm25==0.2.2
+
+# --- Streamlit deployment option ---
+streamlit==1.40.2
