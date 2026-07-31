@@ -335,7 +335,17 @@ with col_search:
             st.info("Upload a document to get started")
 
         query = st.text_input("Ask something about your documents…", disabled=not has_docs)
-        top_k = st.number_input("Passages to consider", min_value=1, max_value=20, value=5)
+        col_topk, col_model = st.columns([1, 1])
+        with col_topk:
+            top_k = st.number_input("Passages to consider", min_value=1, max_value=20, value=5)
+        with col_model:
+            model_choice = st.selectbox(
+                "Model",
+                ["llama-3.1-8b-instant (fast, saves quota)", "llama-3.3-70b-versatile (higher quality)"],
+                index=0,
+            )
+        selected_model = "llama-3.1-8b-instant" if "8b" in model_choice else "llama-3.3-70b-versatile"
+        rag.set_model(selected_model)
 
         if st.button("Search", disabled=not has_docs) and query:
             st.markdown("**Answer**")
