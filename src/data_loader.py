@@ -5,13 +5,13 @@ from pathlib import Path
 from typing import List, Any, Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import pandas as pd
 from langchain_community.document_loaders import (
     PyPDFLoader,
     TextLoader,
     CSVLoader,
     Docx2txtLoader,
 )
-from langchain_community.document_loaders.excel import UnstructuredExcelLoader
 from langchain_core.documents import Document
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -35,7 +35,24 @@ def _load_csv(path: Path) -> List[Document]:
 
 
 def _load_excel(path: Path) -> List[Document]:
-    return UnstructuredExcelLoader(str(path)).load()
+    """
+    Lightweight pandas-based Excel loader — one Document per row, prefixed
+    with column names so each chunk is self-describing. Deliberately avoids
+    `unstructured`, which pulls in torchvision + libmagic and is unnecessary
+    weight for structured spreadsheet data.
+    """
+    sheets = pd.read_excel(path, sheet_name=None, engine="openpyxl")
+    docs = []
+    for sheet_name, df in sheets.items():
+        for row_idx, row in df.iterrows():
+            text = "\n".join(f"{col}: {val}" for col, val in row.items())
+            docs.append(
+                Document(
+                    page_content=text,
+                    metadata={"source": str(path), "sheet": sheet_name, "row_index": int(row_idx)},
+                )
+            )
+    return docs
 
 
 def _load_docx(path: Path) -> List[Document]:
