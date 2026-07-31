@@ -6,6 +6,9 @@
 <title>Stacks — Document Search</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <style>
   :root{
     --ink:#0f1a2b;
@@ -196,6 +199,17 @@
     border-radius:2px;background:rgba(199,134,43,0.1);
   }
   .placeholder{color:#8a8270;font-style:italic;}
+  .notify-banner{
+    border-radius:2px;padding:0.9rem 1rem;margin-top:0.6rem;
+    font-family:'Inter',sans-serif;font-size:0.88rem;line-height:1.5;
+  }
+  .notify-banner.warn{
+    background:rgba(199,134,43,0.12);border:1px solid var(--amber);color:var(--navy-2);
+  }
+  .notify-banner.err{
+    background:rgba(164,67,44,0.1);border:1px solid var(--err);color:var(--err);
+  }
+  .notify-banner strong{display:block;margin-bottom:0.2rem;font-family:'Source Serif 4',serif;font-size:0.98rem;}
   .spinner{
     display:inline-block;width:14px;height:14px;border:2px solid var(--line-strong);
     border-top-color:var(--amber);border-radius:50%;animation:spin 0.7s linear infinite;
@@ -401,6 +415,7 @@ searchForm.addEventListener('submit', async e => {
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let hadError = false;
 
     while(true){
       const { value, done } = await reader.read();
@@ -418,8 +433,34 @@ searchForm.addEventListener('submit', async e => {
           answerText.textContent += event.text;
         }else if(event.type === 'sources'){
           sourceChips.innerHTML = event.sources.map(s => `<span class="source-chip">${s}</span>`).join('');
+        }else if(event.type === 'error'){
+          hadError = true;
+          const cls = event.kind === 'rate_limit' ? 'warn' : 'err';
+          const icon = event.kind === 'rate_limit' ? '⏳' : '⚠️';
+          answerText.innerHTML = `<div class="notify-banner ${cls}"><strong>${icon} ${event.title}</strong>${event.message}</div>`;
+          sourceChips.innerHTML = '';
         }
       }
+    }
+
+    if(hadError) return;
+
+    // Re-render as HTML (preserving line breaks) and typeset any LaTeX
+    // math the model produced ($...$ / $$...$$), now that the full
+    // answer has arrived. Doing this only once, after streaming
+    // completes, avoids KaTeX choking on incomplete $ pairs mid-stream.
+    const rawAnswer = answerText.textContent;
+    answerText.innerHTML = rawAnswer
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
+    if(window.renderMathInElement){
+      renderMathInElement(answerText, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false
+      });
     }
   }catch(e){
     answerText.textContent = 'Search failed — is the backend running?';

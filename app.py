@@ -143,6 +143,9 @@ def query(req: QueryRequest):
     if rag.vectorstore.index is None or rag.vectorstore.index.ntotal == 0:
         raise HTTPException(400, "No documents indexed yet. Upload files first.")
     result = rag.search_and_summarize(req.query, top_k=req.top_k)
+    if result.get("error"):
+        status = 429 if result["error"]["kind"] == "rate_limit" else 502
+        raise HTTPException(status, detail=result["error"])
     return result
 
 
